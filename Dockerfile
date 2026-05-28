@@ -10,14 +10,17 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for TypeScript build)
+RUN npm ci
 
 # Copy source
 COPY src/ ./src/
 
 # Build TypeScript
 RUN npm run build
+
+# Now remove devDependencies to keep image small
+RUN npm prune --production
 
 # Production image
 FROM node:22-alpine
