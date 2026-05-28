@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# APNs keys (NEVER COMMIT)
+keys/*.p8
+keys/AuthKey*.p8
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+
+# Monitoring
+monitoring/*.json

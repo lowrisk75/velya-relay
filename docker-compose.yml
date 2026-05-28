@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: velya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: velya_relay
+      POSTGRES_USER: velya_app
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U velya_app -d velya_relay"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - velya-internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: velya-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - velya-internal
+
+  relay:
+    build: .
+    image: lorislab/velya-relay:latest
+    container_name: velya-relay
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      PORT: 8080
+      # PostgreSQL
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: velya_relay
+      PG_USER: velya_app
+      PG_PASSWORD: ${PG_PASSWORD}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # APNs (Team Scoped Key - works for all apps under Team ID)
+      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_KEY_PATH: /app/keys/AuthKey.p8
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-com.lorislab.velya}
+      APNS_PRODUCTION: ${APNS_PRODUCTION:-false}
+      # JWT Secret
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - velya-internal
+      - velya-public
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  velya-internal:
+    driver: bridge
+  velya-public:
+    driver: bridge
