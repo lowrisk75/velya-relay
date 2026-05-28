@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velya Cloud Relay – Self-Hosted iOS Alarm Infrastructure</title>
+    <meta name="description" content="Open-source cloud relay server for iOS alarm apps. WebSocket + APNs Silent Push + Node-RED integration. Deploy on Railway, Docker, or any VPS.">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #fbfbfd;
+        }
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .cta {
+            display: inline-block;
+            padding: 14px 32px;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .cta:hover { transform: translateY(-2px); }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        .section {
+            margin-bottom: 80px;
+        }
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1d1d1f;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .feature h3 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+        .feature p {
+            color: #6e6e73;
+        }
+        .code-block {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            padding: 24px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9rem;
+        }
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .tech-badge {
+            background: #f5f5f7;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+        footer {
+            background: #1d1d1f;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            h2 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Velya Cloud Relay</h1>
+        <p>Self-hosted infrastructure for iOS alarm apps with WebSocket, APNs Silent Push, and Node-RED integration</p>
+        <a href="https://github.com/lorislab/velya-relay" class="cta">View on GitHub</a>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>Why Velya Cloud Relay?</h2>
+            <p style="font-size: 1.1rem; color: #6e6e73; margin-bottom: 30px;">
+                Building an iOS alarm app that needs to wake devices in the background? Velya Cloud Relay provides the missing infrastructure layer between your automation platform (Node-RED, Home Assistant, etc.) and iOS devices using APNs Silent Push.
+            </p>
+            <div class="features">
+                <div class="feature">
+                    <h3>🔔 APNs Silent Push</h3>
+                    <p>Wakes iOS devices even when app is killed or device is locked. 30-second background execution window for time-sensitive alarms.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚡ WebSocket Relay</h3>
+                    <p>Persistent bidirectional connection for instant alarm delivery when app is in foreground. JWT authentication with 7-day tokens.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔗 Node-RED Integration</h3>
+                    <p>REST API for creating alarms, webhooks for delivery confirmation. Perfect for home automation workflows.</p>
+                </div>
+                <div class="feature">
+                    <h3>🐳 Docker Ready</h3>
+                    <p>One-command deployment with docker-compose. Includes PostgreSQL, Redis, health checks, and automated migrations.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔒 Self-Hosted</h3>
+                    <p>Your data, your server. No third-party dependencies. Deploy on Railway, Render, AWS, or any VPS with Docker support.</p>
+                </div>
+                <div class="feature">
+                    <h3>📊 Audit Logs</h3>
+                    <p>Complete audit trail of all API calls, alarm deliveries, and webhook attempts. Grafana-ready metrics.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Start</h2>
+            <p style="margin-bottom: 20px;">Get your own Velya Cloud Relay running in 3 minutes:</p>
+            <div class="code-block">git clone https://github.com/lorislab/velya-relay.git
+cd velya-relay
+
+# Configure environment variables
+cp .env.example .env
+nano .env  # Add your APNs key ID, Team ID, and JWT secret
+
+# Start the stack
+docker-compose up -d
+
+# Server running at http://localhost:8080
+curl http://localhost:8080/health</div>
+            <p style="margin-top: 20px; font-size: 0.95rem; color: #6e6e73;">
+                See <a href="https://github.com/lorislab/velya-relay/blob/main/DEPLOYMENT.md" style="color: #667eea;">DEPLOYMENT.md</a> for production setup with SSL, Nginx reverse proxy, and security hardening.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Architecture</h2>
+            <p style="margin-bottom: 20px;">Velya Cloud Relay sits between your automation platform and iOS devices:</p>
+            <div class="code-block">┌──────────────┐      REST API       ┌─────────────────┐
+│  Node-RED    │ ───────────────────▶│  Velya Relay    │
+│  Home Assist │                     │  (Docker)       │
+└──────────────┘                     └─────────────────┘
+                                            │
+                    ┌───────────────────────┼───────────────────────┐
+                    │                       │                       │
+              WebSocket                 APNs Push              PostgreSQL
+                    │                       │                       │
+                    ▼                       ▼                       ▼
+            ┌──────────────┐        ┌──────────────┐      ┌──────────────┐
+            │  iOS Device  │        │  iOS Device  │      │  Audit Logs  │
+            │  (Foreground)│        │  (Locked)    │      │  Webhooks    │
+            └──────────────┘        └──────────────┘      └──────────────┘</div>
+        </div>
+
+        <div class="section">
+            <h2>iOS App Integration</h2>
+            <p style="margin-bottom: 20px;">Configure your Velya iOS app to use your self-hosted server:</p>
+            <ol style="margin-left: 20px; line-height: 2; color: #6e6e73;">
+                <li>Open Velya app → Settings → Server Configuration</li>
+                <li>Toggle "Use Custom Server"</li>
+                <li>Enter your server URL: <code style="background: #f5f5f7; padding: 2px 6px; border-radius: 4px;">https://relay.yourdomain.com</code></li>
+                <li>Test connection and save</li>
+            </ol>
+            <p style="margin-top: 20px; font-size: 0.95rem; color: #6e6e73;">
+                The default public relay (<code style="background: #f5f5f7; padding: 2px 6px; border-radius: 4px;">relay2.lorislab.fr</code>) is available for testing but not recommended for production use.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>API Example</h2>
+            <p style="margin-bottom: 20px;">Create an alarm from Node-RED or any HTTP client:</p>
+            <div class="code-block">POST https://relay.yourdomain.com/v1/alarms
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "device_id": "E621E1F8-C36C-495A-93FC-0C247A3E6E5F",
+  "hour": 7,
+  "minute": 30,
+  "enabled": true,
+  "label": "Morning Alarm",
+  "sound": "radar",
+  "snooze_enabled": true,
+  "vibrate": true
+}</div>
+            <p style="margin-top: 20px; font-size: 0.95rem; color: #6e6e73;">
+                See <a href="https://github.com/lorislab/velya-relay#api-endpoints" style="color: #667eea;">full API documentation</a> for webhooks, device management, and advanced features.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Tech Stack</h2>
+            <div class="tech-stack">
+                <span class="tech-badge">Node.js 22</span>
+                <span class="tech-badge">TypeScript</span>
+                <span class="tech-badge">uWebSockets.js</span>
+                <span class="tech-badge">PostgreSQL 16</span>
+                <span class="tech-badge">Redis 7</span>
+                <span class="tech-badge">Docker</span>
+                <span class="tech-badge">JWT RS256</span>
+                <span class="tech-badge">APNs HTTP/2</span>
+                <span class="tech-badge">Zod Validation</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Production Deployments</h2>
+            <p style="margin-bottom: 20px;">Velya Cloud Relay supports multiple deployment platforms:</p>
+            <div class="features">
+                <div class="feature">
+                    <h3>Railway</h3>
+                    <p>One-click deploy with automatic SSL, GitHub integration, and managed databases. $5-10/month for small deployments.</p>
+                </div>
+                <div class="feature">
+                    <h3>Docker (VPS)</h3>
+                    <p>Full control on any VPS (Hetzner, DigitalOcean, Linode). Use provided Nginx config and systemd service.</p>
+                </div>
+                <div class="feature">
+                    <h3>Proxmox LXC</h3>
+                    <p>Lightweight container deployment for homelab environments. 512MB RAM, 2GB disk minimum.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Open Source</h2>
+            <p style="margin-bottom: 20px;">
+                Velya Cloud Relay is MIT licensed. Contributions welcome!
+            </p>
+            <div class="code-block">git clone https://github.com/lorislab/velya-relay.git
+npm install
+npm run dev  # Development server with hot reload
+
+npm test     # Run test suite
+npm run lint # ESLint + TypeScript checks</div>
+            <p style="margin-top: 20px; font-size: 0.95rem; color: #6e6e73;">
+                See <a href="https://github.com/lorislab/velya-relay/blob/main/CONTRIBUTING.md" style="color: #667eea;">CONTRIBUTING.md</a> for commit conventions and pull request process.
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <p style="margin-bottom: 10px;">
+            Built by <a href="https://lorislab.fr">LorisLabs</a> •
+            <a href="https://github.com/lorislab/velya-relay">GitHub</a> •
+            <a href="https://github.com/lorislab/velya-relay/blob/main/LICENSE">MIT License</a>
+        </p>
+        <p style="font-size: 0.9rem; opacity: 0.7;">
+            Questions? <a href="mailto:support@lorislab.fr">support@lorislab.fr</a>
+        </p>
+    </footer>
+</body>
+</html>
