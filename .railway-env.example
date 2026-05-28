@@ -1,0 +1,106 @@
+# Velya Cloud Relay - Railway Environment Variables Template
+#
+# SETUP INSTRUCTIONS:
+# 1. Copy this file: cp .railway-env.example .railway-env
+# 2. Fill in the APNS_* values (get from Bitwarden or Apple Developer Portal)
+# 3. Generate JWT_SECRET: openssl rand -base64 64
+# 4. Run: ./scripts/deploy-railway.sh
+#
+# OR manually set variables:
+# railway variables set KEY=VALUE
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Server Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+PORT=8080
+NODE_ENV=production
+LOG_LEVEL=info
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Database & Cache (Auto-configured by Railway plugins)
+# ─────────────────────────────────────────────────────────────────────────────
+# PostgreSQL - Railway will auto-inject these from the PostgreSQL plugin:
+#   PG_HOST=${{Postgres.PGHOST}}
+#   PG_PORT=${{Postgres.PGPORT}}
+#   PG_DATABASE=${{Postgres.PGDATABASE}}
+#   PG_USER=${{Postgres.PGUSER}}
+#   PG_PASSWORD=${{Postgres.PGPASSWORD}}
+#
+# Redis - Railway will auto-inject these from the Redis plugin:
+#   REDIS_HOST=${{Redis.REDIS_HOST}}
+#   REDIS_PORT=${{Redis.REDIS_PORT}}
+#   REDIS_PASSWORD=${{Redis.REDIS_PASSWORD}}
+#
+# No manual configuration needed for database connections!
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APNs (Apple Push Notification Service)
+# ─────────────────────────────────────────────────────────────────────────────
+# Get from: https://developer.apple.com/account/resources/authkeys/list
+# Or Bitwarden: vault.kevinn.ie → Claude Code → "Apple Developer APNs Key"
+
+APNS_KEY_ID=YOUR_KEY_ID_HERE
+APNS_TEAM_ID=YOUR_TEAM_ID_HERE
+APNS_BUNDLE_ID=com.lorislab.velya
+APNS_PRODUCTION=false
+
+# APNs Key File (.p8)
+# Railway doesn't support file uploads via env vars, so we base64 encode:
+# 1. Encode: base64 < keys/AuthKey.p8 | tr -d '\n'
+# 2. Set variable: railway variables set APNS_KEY_BASE64="<paste here>"
+# 3. Server will decode on startup: Buffer.from(process.env.APNS_KEY_BASE64, 'base64')
+
+APNS_KEY_BASE64=PASTE_BASE64_ENCODED_KEY_HERE
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JWT Secret (generate with: openssl rand -base64 64)
+# ─────────────────────────────────────────────────────────────────────────────
+JWT_SECRET=YOUR_JWT_SECRET_HERE
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORS (Optional - Railway will auto-configure public domain)
+# ─────────────────────────────────────────────────────────────────────────────
+# CORS_ORIGIN=https://your-frontend.com
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Quick Setup Commands
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# 1. Install Railway CLI (if not installed):
+#    npm install -g @railway/cli
+#
+# 2. Login to Railway:
+#    railway login
+#
+# 3. Create new project:
+#    railway init --name velya-relay
+#
+# 4. Add PostgreSQL plugin:
+#    railway add --plugin postgresql
+#
+# 5. Add Redis plugin:
+#    railway add --plugin redis
+#
+# 6. Set all environment variables from this file:
+#    railway variables set PORT=8080 NODE_ENV=production ...
+#
+# 7. Deploy:
+#    railway up
+#
+# 8. Get your public URL:
+#    railway domain
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# Example: Set variables from Bitwarden
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# APNS_KEY_ID=$(~/.claude/bw-env.py --get "Apple Developer APNs Key" --field APNS_KEY_ID)
+# APNS_TEAM_ID=$(~/.claude/bw-env.py --get "Apple Developer APNs Key" --field APNS_TEAM_ID)
+# APNS_KEY_BASE64=$(base64 < ~/Downloads/AuthKey_*.p8 | tr -d '\n')
+# JWT_SECRET=$(openssl rand -base64 64)
+#
+# railway variables set APNS_KEY_ID="$APNS_KEY_ID"
+# railway variables set APNS_TEAM_ID="$APNS_TEAM_ID"
+# railway variables set APNS_KEY_BASE64="$APNS_KEY_BASE64"
+# railway variables set JWT_SECRET="$JWT_SECRET"
+#
