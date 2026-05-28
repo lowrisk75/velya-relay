@@ -38,9 +38,9 @@ COPY package*.json ./
 # Create keys directory
 RUN mkdir -p /app/keys && chmod 700 /app/keys
 
-# Create non-root user
-RUN addgroup -g 1000 velya && \
-    adduser -D -u 1000 -G velya velya && \
+# Create non-root user (use -S for system user to avoid conflicts)
+RUN addgroup -S velya && \
+    adduser -S -G velya velya && \
     chown -R velya:velya /app
 
 USER velya
