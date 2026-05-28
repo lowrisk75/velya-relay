@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: lorislab/velya-relay
+  IMAGE_NAME: lorislabapp/velya-relay
 
 jobs:
   build:
