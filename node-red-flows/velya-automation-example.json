@@ -1,0 +1,410 @@
+[
+  {
+    "id": "velya_example_flow",
+    "type": "tab",
+    "label": "Velya Alarm Automation",
+    "disabled": false,
+    "info": "# Velya Cloud Relay - Node-RED Integration Example\n\nThis flow demonstrates:\n- Calculating next alarm time (21:00 tonight or tomorrow)\n- Creating alarm via REST API\n- Handling webhook delivery confirmation\n- Error handling and retry logic\n\n## Setup:\n1. Configure the Velya Config node with your:\n   - Server URL (e.g., https://relay.velya.app)\n   - API Key (from node_red_keys table)\n   - Device ID (from iOS app Settings → Advanced)\n2. Deploy the flow\n3. Inject manually to test, or schedule with cron/inject node\n\n## Flow Structure:\n- **Calculate Next 21h**: Determines if 21:00 is today or tomorrow\n- **Create Alarm API Call**: POST to /v1/alarms\n- **Webhook Receiver**: Listens for delivery confirmation\n- **Error Handler**: Logs failures and retries\n"
+  },
+  {
+    "id": "velya_config",
+    "type": "http request",
+    "z": "velya_example_flow",
+    "name": "Velya Config",
+    "method": "POST",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "https://relay.velya.app/v1/alarms",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "bearer",
+    "sendsPayload": true,
+    "headers": [
+      {
+        "keyType": "other",
+        "keyValue": "Content-Type",
+        "valueType": "other",
+        "valueValue": "application/json"
+      }
+    ],
+    "x": 0,
+    "y": 0,
+    "wires": []
+  },
+  {
+    "id": "inject_daily_21h",
+    "type": "inject",
+    "z": "velya_example_flow",
+    "name": "Daily at 20:50",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "50 20 * * *",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 130,
+    "y": 80,
+    "wires": [
+      [
+        "calculate_next_21h"
+      ]
+    ]
+  },
+  {
+    "id": "inject_manual_test",
+    "type": "inject",
+    "z": "velya_example_flow",
+    "name": "Manual Test",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 130,
+    "y": 140,
+    "wires": [
+      [
+        "calculate_next_21h"
+      ]
+    ]
+  },
+  {
+    "id": "calculate_next_21h",
+    "type": "function",
+    "z": "velya_example_flow",
+    "name": "Calculate Next 21:00",
+    "func": "// Get current time\nconst now = new Date();\nconst currentHour = now.getHours();\nconst currentMinute = now.getMinutes();\n\n// Target: 21:00\nconst targetHour = 21;\nconst targetMinute = 0;\n\n// Calculate next occurrence\nlet alarmDate = new Date();\nalarmDate.setHours(targetHour, targetMinute, 0, 0);\n\n// If it's already past 21:00 today, schedule for tomorrow\nif (currentHour > targetHour || (currentHour === targetHour && currentMinute >= targetMinute)) {\n    alarmDate.setDate(alarmDate.getDate() + 1);\n}\n\n// Build alarm payload\nmsg.payload = {\n    device_id: env.get(\"VELYA_DEVICE_ID\") || \"YOUR_DEVICE_ID_HERE\",\n    hour: targetHour,\n    minute: targetMinute,\n    enabled: true,\n    label: \"Automated 21h Alarm\",\n    sound: \"radar\",\n    snooze_enabled: true,\n    vibrate: true,\n    days_of_week: [1, 2, 3, 4, 5, 6, 7], // Every day\n    webhook_url: `${env.get(\"VELYA_WEBHOOK_BASE\")}/velya-webhook` || \"http://localhost:1880/velya-webhook\"\n};\n\n// Store alarm time for debugging\nmsg.alarmTime = alarmDate.toISOString();\nmsg.alarmHuman = alarmDate.toLocaleString('fr-FR', {\n    weekday: 'long',\n    year: 'numeric',\n    month: 'long',\n    day: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit'\n});\n\nnode.status({\n    fill: \"blue\",\n    shape: \"dot\",\n    text: `Next: ${msg.alarmHuman}`\n});\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 110,
+    "wires": [
+      [
+        "debug_alarm_calc",
+        "create_alarm_api"
+      ]
+    ]
+  },
+  {
+    "id": "debug_alarm_calc",
+    "type": "debug",
+    "z": "velya_example_flow",
+    "name": "Alarm Calculation",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "create_alarm_api",
+    "type": "http request",
+    "z": "velya_example_flow",
+    "name": "POST /v1/alarms",
+    "method": "POST",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "bearer",
+    "sendsPayload": true,
+    "headers": [
+      {
+        "keyType": "other",
+        "keyValue": "Content-Type",
+        "valueType": "other",
+        "valueValue": "application/json"
+      }
+    ],
+    "x": 650,
+    "y": 140,
+    "wires": [
+      [
+        "check_alarm_response"
+      ]
+    ]
+  },
+  {
+    "id": "check_alarm_response",
+    "type": "switch",
+    "z": "velya_example_flow",
+    "name": "Success?",
+    "property": "statusCode",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "eq",
+        "v": "200",
+        "vt": "num"
+      },
+      {
+        "t": "eq",
+        "v": "201",
+        "vt": "num"
+      },
+      {
+        "t": "else"
+      }
+    ],
+    "checkall": "false",
+    "repair": false,
+    "outputs": 3,
+    "x": 880,
+    "y": 140,
+    "wires": [
+      [
+        "alarm_success"
+      ],
+      [
+        "alarm_success"
+      ],
+      [
+        "alarm_error"
+      ]
+    ]
+  },
+  {
+    "id": "alarm_success",
+    "type": "function",
+    "z": "velya_example_flow",
+    "name": "Success Handler",
+    "func": "node.status({\n    fill: \"green\",\n    shape: \"dot\",\n    text: `Alarm created: ${msg.payload.alarm_id}`\n});\n\n// Store alarm ID for tracking\nflow.set(`velya_last_alarm_id`, msg.payload.alarm_id);\nflow.set(`velya_last_alarm_time`, new Date().toISOString());\n\nmsg.success = true;\nmsg.alarm_id = msg.payload.alarm_id;\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1100,
+    "y": 100,
+    "wires": [
+      [
+        "debug_success"
+      ]
+    ]
+  },
+  {
+    "id": "alarm_error",
+    "type": "function",
+    "z": "velya_example_flow",
+    "name": "Error Handler",
+    "func": "const error = msg.payload.error || msg.statusCode || \"Unknown error\";\n\nnode.status({\n    fill: \"red\",\n    shape: \"ring\",\n    text: `Failed: ${error}`\n});\n\nnode.error(`Velya alarm creation failed: ${JSON.stringify(msg.payload)}`, msg);\n\nmsg.error = error;\nmsg.success = false;\n\n// Store failure for retry logic\nflow.set(`velya_last_error`, {\n    time: new Date().toISOString(),\n    error: error,\n    payload: msg.payload\n});\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1100,
+    "y": 180,
+    "wires": [
+      [
+        "debug_error",
+        "retry_delay"
+      ]
+    ]
+  },
+  {
+    "id": "debug_success",
+    "type": "debug",
+    "z": "velya_example_flow",
+    "name": "Success",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1300,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "debug_error",
+    "type": "debug",
+    "z": "velya_example_flow",
+    "name": "Error",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1290,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "retry_delay",
+    "type": "delay",
+    "z": "velya_example_flow",
+    "name": "Wait 30s",
+    "pauseType": "delay",
+    "timeout": "30",
+    "timeoutUnits": "seconds",
+    "rate": "1",
+    "nbRateUnits": "1",
+    "rateUnits": "second",
+    "randomFirst": "1",
+    "randomLast": "5",
+    "randomUnits": "seconds",
+    "drop": false,
+    "allowrate": false,
+    "outputs": 1,
+    "x": 1300,
+    "y": 240,
+    "wires": [
+      [
+        "retry_counter"
+      ]
+    ]
+  },
+  {
+    "id": "retry_counter",
+    "type": "function",
+    "z": "velya_example_flow",
+    "name": "Retry (max 3)",
+    "func": "// Get current retry count\nconst retries = flow.get(`velya_retry_count`) || 0;\nconst maxRetries = 3;\n\nif (retries < maxRetries) {\n    flow.set(`velya_retry_count`, retries + 1);\n    node.status({\n        fill: \"yellow\",\n        shape: \"ring\",\n        text: `Retry ${retries + 1}/${maxRetries}`\n    });\n    return msg; // Retry\n} else {\n    flow.set(`velya_retry_count`, 0);\n    node.status({\n        fill: \"red\",\n        shape: \"dot\",\n        text: `Failed after ${maxRetries} retries`\n    });\n    node.error(`Velya alarm failed after ${maxRetries} retries`, msg);\n    return null; // Stop retrying\n}",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1100,
+    "y": 300,
+    "wires": [
+      [
+        "calculate_next_21h"
+      ]
+    ]
+  },
+  {
+    "id": "webhook_receiver",
+    "type": "http in",
+    "z": "velya_example_flow",
+    "name": "Webhook /velya-webhook",
+    "url": "/velya-webhook",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 400,
+    "wires": [
+      [
+        "parse_webhook"
+      ]
+    ]
+  },
+  {
+    "id": "parse_webhook",
+    "type": "function",
+    "z": "velya_example_flow",
+    "name": "Parse Webhook",
+    "func": "// Velya sends:\n// {\n//   \"event\": \"alarm.delivered\",\n//   \"alarm_id\": \"uuid\",\n//   \"device_id\": \"uuid\",\n//   \"delivered_at\": \"2024-05-28T21:00:03.123Z\",\n//   \"delivery_method\": \"websocket\" | \"apns\"\n// }\n\nconst payload = msg.payload;\n\nif (payload.event === \"alarm.delivered\") {\n    node.status({\n        fill: \"green\",\n        shape: \"dot\",\n        text: `Delivered via ${payload.delivery_method}`\n    });\n    \n    // Store delivery confirmation\n    flow.set(`velya_last_delivery`, {\n        alarm_id: payload.alarm_id,\n        time: payload.delivered_at,\n        method: payload.delivery_method\n    });\n    \n    msg.statusCode = 200;\n    msg.payload = { success: true };\n} else {\n    node.warn(`Unknown webhook event: ${payload.event}`);\n    msg.statusCode = 400;\n    msg.payload = { error: \"Unknown event\" };\n}\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 400,
+    "wires": [
+      [
+        "webhook_response",
+        "debug_webhook"
+      ]
+    ]
+  },
+  {
+    "id": "webhook_response",
+    "type": "http response",
+    "z": "velya_example_flow",
+    "name": "200 OK",
+    "statusCode": "",
+    "headers": {},
+    "x": 620,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "debug_webhook",
+    "type": "debug",
+    "z": "velya_example_flow",
+    "name": "Webhook Received",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 460,
+    "wires": []
+  },
+  {
+    "id": "comment_setup",
+    "type": "comment",
+    "z": "velya_example_flow",
+    "name": "📋 SETUP REQUIRED: Configure environment variables in Node-RED settings",
+    "info": "Add to Node-RED's settings.js:\n\n```javascript\nfunctionGlobalContext: {\n    VELYA_SERVER_URL: \"https://relay.velya.app\",\n    VELYA_API_KEY: \"your-api-key-here\",\n    VELYA_DEVICE_ID: \"E621E1F8-C36C-495A-93FC-0C247A3E6E5F\",\n    VELYA_WEBHOOK_BASE: \"https://your-nodered.com\"\n}\n```\n\nOr set via environment variables:\n```bash\nexport VELYA_SERVER_URL=https://relay.velya.app\nexport VELYA_API_KEY=your-api-key-here\nexport VELYA_DEVICE_ID=your-device-id\nexport VELYA_WEBHOOK_BASE=https://your-nodered.com\n```",
+    "x": 300,
+    "y": 20,
+    "wires": []
+  },
+  {
+    "id": "comment_trigger",
+    "type": "comment",
+    "z": "velya_example_flow",
+    "name": "⏰ Trigger: Daily at 20:50 (10 min before alarm) or manual inject",
+    "info": "The flow calculates if 21:00 is tonight or tomorrow:\n- If before 21:00 → alarm for tonight\n- If after 21:00 → alarm for tomorrow",
+    "x": 280,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "comment_webhook",
+    "type": "comment",
+    "z": "velya_example_flow",
+    "name": "🔔 Webhook: Receives delivery confirmation from Velya relay",
+    "info": "When the alarm is delivered to the device, Velya sends a POST to the webhook_url:\n\nPOST /velya-webhook\n{\n  \"event\": \"alarm.delivered\",\n  \"alarm_id\": \"uuid\",\n  \"device_id\": \"uuid\",\n  \"delivered_at\": \"ISO timestamp\",\n  \"delivery_method\": \"websocket\" | \"apns\"\n}\n\nYou can use this to trigger follow-up automation (e.g., log to database, send notification, etc.)",
+    "x": 270,
+    "y": 360,
+    "wires": []
+  }
+]
