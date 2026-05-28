@@ -1,6 +1,20 @@
 # Velya Cloud Relay
 
-Open-source WebSocket relay server for Velya smart alarms.
+Open-source WebSocket relay server for [Velya](https://lorislab.fr/velya.html) smart alarms.
+
+**🏠 Self-hosted by design** — Your data stays on your infrastructure. No subscriptions, no tracking, no vendor lock-in.
+
+> **📍 Status**: v1.0.0 — Production ready  
+> **🔮 Roadmap**: Hosted relay option coming in 2026 if community demand justifies it. For now, self-hosting keeps costs at $0 and gives you full control.
+
+## Why Self-Host?
+
+- **Privacy First** — All alarm data, device tokens, and webhooks stay on YOUR server
+- **Cost Control** — Run on your existing infrastructure (NAS, Raspberry Pi, VPS) or use Railway/Fly.io free tiers
+- **No Single Point of Failure** — You're not dependent on a third-party service staying online
+- **Perfect for Home Automation** — Deploy alongside Node-RED, Home Assistant, Frigate on the same network
+
+The Velya iOS app works with **any** relay server — just point it to your URL in Settings.
 
 ## Features
 
@@ -16,7 +30,7 @@ Open-source WebSocket relay server for Velya smart alarms.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/lorislab/velya-relay
+git clone https://github.com/lowrisk75/velya-relay
 cd velya-relay
 ```
 
@@ -171,22 +185,44 @@ wss://your-server.com/v1/relay?token=<jwt>
 
 ## APNs Setup
 
-### Team Scoped Key (Recommended)
+**⚠️ Important**: You need your **own** Apple Developer account ($99/year) to send push notifications. This relay cannot use someone else's APNs key for security reasons.
 
-One key works for all apps under your Team ID:
+### Option 1: Use Velya's Bundle ID (Simplest)
+
+If you're just running this for personal use with the official Velya app from the App Store:
 
 1. Go to [Apple Developer Keys](https://developer.apple.com/account/resources/authkeys/list)
 2. Create new key → **Apple Push Notifications service (APNs)**
-3. Enable **Apple Push Notifications service**
-4. Download `.p8` file
-5. Note the **Key ID** and **Team ID**
+3. Download `.p8` file
+4. In `.env`, set:
+   - `APNS_BUNDLE_ID=com.lorislab.velya`
+   - `APNS_KEY_ID=<your key ID>`
+   - `APNS_TEAM_ID=<your team ID>`
 
-### App-Specific Key
+**Note**: This works because APNs keys are scoped to your Team ID, not to specific app owners. Your key can send notifications to any app as long as you specify the correct bundle ID.
 
-One key per bundle ID:
+### Option 2: Fork Velya and Use Your Own Bundle ID
 
-1. Same process but select specific App ID
-2. Must match `APNS_BUNDLE_ID` in `.env`
+If you want full control (or you're building a derivative app):
+
+1. Fork the Velya iOS app repository
+2. Change the bundle ID to `com.yourcompany.youralarm`
+3. Create an App ID in your Apple Developer account
+4. Generate an APNs key for that App ID
+5. Build and install the app on your devices via Xcode or TestFlight
+
+### Team Scoped Key (Recommended for Multiple Apps)
+
+One key can work for **all apps under your Team ID**:
+
+1. When creating the key, select **"Apple Push Notifications service"** (no specific App ID)
+2. This key can send notifications to any bundle ID you specify in the request
+
+### Troubleshooting
+
+- **"BadDeviceToken"** → The device token was registered with a different APNs environment (sandbox vs production)
+- **"Unregistered"** → The app is no longer installed, or the user revoked notification permissions
+- **"InvalidProviderToken"** → Your `.p8` key doesn't match the Key ID, or the key is expired/revoked
 
 ## Production Deployment
 
